@@ -1,7 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
+import torch
+from PIL import Image
+import io
+from fastapi.responses import JSONResponse
+from transformers import ViTForImageClassification, ViTImageProcessor
 from datetime import datetime, timedelta
 import mysql.connector
 import mysql.connector.pooling
@@ -87,8 +93,36 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224", num_labels=8)
+model.load_state_dict(torch.load("vit_model.pth", map_location=device))
+model.to(device)
+model.eval()
+@app.post("/injury-assessment/")
+async def injury_assessment(file: UploadFile = File(...)):
+    try:
+        # Read image
+        image_bytes = await file.read()
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
+        # Preprocess image
+        inputs = processor(images=image, return_tensors="pt").to(device)
 
+        # Get predictions
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+            predicted_class = torch.argmax(logits, dim=1).item()
+
+        return JSONResponse(content={
+            "filename": file.filename,
+            "predicted_class": predicted_class,
+            "logits": logits.tolist()
+        })
+
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 class InjuryRequest(BaseModel):
     conversation_history: List[str]
