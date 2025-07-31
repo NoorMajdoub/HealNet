@@ -1,5 +1,4 @@
 
-
 # HealNet: AI-based Medical Assistance for War Victims
 
 HealNet is an AI-powered application designed to assist in diagnosing and providing recommendations based on medical data, specifically targeting common injuries, infections, and blood pressure-related conditions for war victims. This application leverages machine learning and image recognition models to evaluate injuries or health issues and provide a structured diagnosis pipeline.
@@ -201,5 +200,5 @@ CREATE TABLE infections (
 
 ## Contributing
 
-Feel free to fork the project and submit pull requests for any changes or improvements. Contributions are always welcome!
+Feel free to fork the project and submit pull requests for any changes or improvements.Contributions are always welcome!
 
